@@ -1,3 +1,9 @@
+# helper functions
+import os
+import cv2
+import math
+import numpy as np
+from skimage.measure import compare_ssim as ssim
 # function to calculate the peak signal to noise ratio of low resolution and high resolution
 def psnr(l_res, h_res):
     
@@ -41,7 +47,7 @@ def compare_images(l_res, h_res):
 # degrade images
 
 def degrade_images(path, value):
-    
+    print('path {}'.format(path))
     # for all the files in the given path
     for file in os.listdir(path):
         
@@ -79,13 +85,11 @@ def crop(img, edge):
     
 def test(test_path, model):
     
-    #model = srcnn_model()
-    #model.load_weights('srcnn_weights.h5')
     
     # load high res and and low res images
     path, file = os.path.split(test_path)
     lr = cv2.imread(test_path)
-    hr = cv2.imread('org_images/{}'.format(file))
+    hr = cv2.imread('Test/{}'.format(file))
     
     # take the mode of the images
     lr = size_mod(lr, 3)
@@ -93,7 +97,7 @@ def test(test_path, model):
     
     # convert the images to YCrCb color space
     ycrcb = cv2.cvtColor(lr, cv2.COLOR_BGR2YCrCb)
-    print(ycrcb.shape)
+    
     # extract the Y (luminance) channel from YCrCb space
     Y = np.zeros((1, ycrcb.shape[0], ycrcb.shape[1], 1), dtype=float)
     Y[0, :, :, 0] = ycrcb[:, :, 0].astype(float) / 255
@@ -106,10 +110,10 @@ def test(test_path, model):
     prediction[prediction > 255] = 255
     prediction[prediction < 0] = 0
     prediction = prediction.astype(np.uint8)
-    print(prediction.shape)
+
     # reconstruct the image in BGR space
     # note the predicted image lost the 4 pixels on each side therefore we need the crop
-    # the image with a factor of 6
+    # the image with a factor of 4
     ycrcb = crop(ycrcb, 4)
     ycrcb[:, :, 0] = prediction[0, :, :, 0] 
     recon_image = cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2BGR)
@@ -124,4 +128,4 @@ def test(test_path, model):
     metrics.append(compare_images(recon_image, hr))
     
     # return hr, lr, reconstructed image and metrics
-    return hr, lr, recon_image, metrics    
+    return hr, lr, recon_image, metrics
